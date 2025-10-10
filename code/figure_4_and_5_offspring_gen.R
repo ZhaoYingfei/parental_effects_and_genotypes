@@ -1,0 +1,625 @@
+# -*- coding: utf-8 -*-
+# @Author: Zhao Yingfei
+# @Date: 2025-10-01 
+# @Last Modified by: dbc
+# @Last Modified time: 2025-10-01 
+# @Description: analysis of offspring generation
+
+# Cleaning memory
+cat("\014")
+rm(list = ls())
+gc()
+
+# Load necessary packages
+library(broom)
+library(car)
+library(ggpubr)
+library(lmPerm)
+library(patchwork)
+library(rcompanion)
+library(readxl)
+library(tidyverse)
+library(skimr)
+library(cowplot)
+library(multcompView)
+library(permuco)
+
+# set work directory
+setwd("C:/Users/qianh/Desktop/R/chapter3")
+getwd()
+
+
+# Read data
+data_02gen <- read_excel("./data/2022herbivory_data250325.xlsx", sheet = "2nd.gen")
+
+data_02gen <- data_02gen %>% mutate(across(fw1st_mg:sla, ~as.numeric(.)))
+
+skim(data_02gen)
+str(data_02gen)
+
+# Data preprocessing
+data_02gen$treatment1st <- as.factor(data_02gen$treatment1st)
+data_02gen$gene <- as.factor(data_02gen$gene)
+data_02gen$rep <- as.factor(data_02gen$rep)
+data_02gen$nest.id <- as.factor(data_02gen$nest.id)
+
+levels(data_02gen$treatment1st)
+levels(data_02gen$gene)
+
+# data_02gen$fw1st_g <- data_02gen$fw1st_mg / 1000
+
+# ==========================================================================
+# Assumption tests
+# ==========================================================================
+# Homogeneity of variance tests
+# Define the variables to perform Levene's Test on
+variables <- c(
+               "total.mass",
+               "total.leaf.mass",
+               "stem.mass",
+               "petiole.mass",
+               "root.mass",
+               "no.ramets",
+               "no.leaves",
+               "stem.length",
+               "total.leaf.area",
+               "mla",
+               "sla",
+               "ratio")
+
+
+# Normalize the specified column
+# data_02gen <- data_02gen %>%
+#  mutate(across(all_of(variables), 
+#                  ~ ifelse(. > 0, sqrt(.), NA)))
+#                  ~ ifelse(. > 0, log(.), NA)))
+
+# data_02gen <- data_02gen %>%
+#   group_by(gene, treatment1st) %>%  # Replace group_variable with your grouping variable
+#   mutate(across(all_of(variables), 
+#                  ~ (.-mean(., na.rm = TRUE)) / sd(., na.rm = TRUE))) %>%
+#   ungroup()
+
+
+# Function to perform Levene's Test for a given variable
+perform_levene_test <- function(var, data) {
+  # Construct the formula for Levene's Test
+  formula <- as.formula(paste(var, "~ gene * treatment1st"))
+
+  # Subset data to exclude NA values for the current variable
+  subset_data <- data %>% filter(!is.na(.data[[var]]))
+
+  # Perform Levene's Test
+  test_result <- leveneTest(formula, data = subset_data)
+
+  # Extract the p-value
+  test_result.tidy <- tidy(test_result) %>% mutate(variable = var, .before = 1)
+
+  return(test_result.tidy)
+
+}
+
+# Apply Levene's Test to all variables and store p-values
+levene_results_df <- map_dfr(variables, ~ perform_levene_test(.x, data = data_02gen))
+
+levene_results_df <- levene_results_df %>%
+mutate(statistic = round(statistic, 2),
+       p.value = round(p.value, 3))
+
+# > levene_results_df
+#          variables statistic p.value df df.residual
+# 1       total.mass      0.87  0.5724 11         134
+# 2  total.leaf.mass      1.72  0.0755 11         134
+# 3      stem.mass      0.98  0.4652 11         134
+# 4     petiole.mass      0.69  0.7470 11         134
+# 5        root.mass      1.83  0.0550 11         134
+# 6        no.ramets      0.44  0.9337 11         134
+# 7        no.leaves      1.61  0.1027 11         134
+# 8    stem.length      0.76  0.6780 11         134
+# 9  total.leaf.area      1.06  0.3989 11         134
+# 10             mla      3.70  0.0001 11         134
+# 11             sla      2.92  0.0017 11         134
+# 12           ratio      1.18  0.3033 11         134
+
+# write_csv(levene_results_df, "./results/offspring.levene.result.csv")
+
+# Normality Test
+# Function to perform normality test for a given variable
+perform_normality_test <- function(var, data) {
+
+  # Subset data to exclude NA values for the current variable
+  subset_data <- data %>% filter(!is.na(.data[[var]])) %>% pull(var)
+
+    # Perform Shapiro-Wilk test
+    test_result <- shapiro.test(subset_data)
+
+    # Extract the p-value
+    test_result.tidy <- tidy(test_result) %>% mutate(variable = var, .before = 1)
+
+    return(test_result.tidy)
+}
+
+# Apply normality test to all variables
+normality_results_df <- map_dfr(variables, ~ perform_normality_test(.x, data = data_02gen))
+
+#
+normality_results_df <- normality_results_df %>%
+mutate(statistic = round(statistic, 2),
+       p.value = round(p.value, 3))
+
+# > normality_results_df
+# # A tibble: 12 × 4
+#    variable        statistic p.value method
+#    <chr>               <dbl>   <dbl> <chr>
+#  1 total.mass           0.81   0     Shapiro-Wilk normality test
+#  2 total.leaf.mass      0.76   0     Shapiro-Wilk normality test
+#  3 stem.mass          0.74   0     Shapiro-Wilk normality test
+#  4 petiole.mass         0.81   0     Shapiro-Wilk normality test
+#  5 root.mass            0.55   0     Shapiro-Wilk normality test
+#  6 no.ramets            0.96   0.001 Shapiro-Wilk normality test
+#  7 no.leaves            0.9    0     Shapiro-Wilk normality test
+#  8 stem.length        0.93   0     Shapiro-Wilk normality test
+#  9 total.leaf.area      0.84   0     Shapiro-Wilk normality test
+# 10 mla                  0.92   0     Shapiro-Wilk normality test
+# 11 sla                  0.72   0     Shapiro-Wilk normality test
+# 12 ratio                0.44   0     Shapiro-Wilk normality test
+
+# Save results
+# write_csv(normality_results_df, "./results/offspring.normality.result.csv")
+
+## =========================================================================
+# Permutation ANOVA with nested error term
+# ==========================================================================
+# Function
+perform_aovp <- function(var, data) {
+  fml <- as.formula(paste(var, "~ gene + treatment1st + gene:treatment1st + Error(nest.id/(gene))"))
+  subset_data <- data[!is.na(data[[var]]), , drop = FALSE]
+  set.seed(2024)
+  fit <- permuco::aovperm(fml, data = subset_data, np = 999)
+  summary(fit)  
+}
+
+aovp_results <- setNames(
+  purrr::map(variables, ~ perform_aovp(.x, data_02gen)),
+  variables
+)
+aovp_results_df0 <- imap_dfr(aovp_results, ~{
+  df <- as.data.frame(.x, check.names = FALSE) 
+  df$effect <- rownames(df)
+  df$variable <- .y
+  rownames(df) <- NULL
+  df
+})
+
+# variable → Traits 
+traits_lut <- tibble(
+  variable = c("total.mass","total.leaf.mass","petiole.mass","stem.mass",
+               "root.mass","ratio","no.ramets","stem.length","total.leaf.area",
+               "no.leaves","mla","sla"),
+  Traits   = c("Total mass","Leaf mass","Petiole mass","Stem mass","Root mass",
+               "Root-to-shoot ratio","Number of ramets","Stem length",
+               "Total leaf area","Number of leaves","Mean leaf area",
+               "Specific leaf area")
+)
+
+# Rename and keep the specified column
+aovp_results_df <- aovp_results_df0 %>%
+  rename(
+    parametric.p.value = `parametric P(>F)`,
+    resampled.p.value  = `resampled P(>F)`
+  )  %>%
+  left_join(traits_lut, by = "variable") %>%
+  select(Traits, effect, dfn, dfd, `F`, `parametric.p.value`, `resampled.p.value`) %>%
+  mutate(
+    dfn = as.integer(round(dfn, 0)),
+    dfd = as.integer(round(dfd, 0)),
+    `F` = round(`F`, 3),
+    parametric.p.value = round(parametric.p.value, 3),
+    resampled.p.value  = round(resampled.p.value, 3)
+  )
+#Save results to CSV file
+write_csv(aovp_results_df, "./results/offspring.performance.anova.csv")
+
+# ==========================================================================
+# Permutation ANOVA and pairwise comparison
+# Note: pairwise tests ignore the random/nested structure and other factors
+# ==========================================================================
+# permuco::aovperm currently does not have a built-in emmeans interface, 
+# and the authors confirm that it is not very suitable; 
+# therefore, post hoc tests are usually performed using pairwise permutation tests for "simple effects"
+aovp_posthoc <- function(data, var, factors, np = 999) {
+
+  # Build formula
+  formula <- as.formula(paste(var, "~", paste(factors[1], factors[2], paste0(factors[1], ":", factors[2]), sep = "+")))
+
+  # Perform permutation ANOVA
+  set.seed(2024)
+  perm_anova <- aovp(formula, data = data, np = np)
+  anova_result <- tidy(perm_anova) %>% mutate(variable = var, .before = 1)
+
+  # Post hoc comparison for each main effect
+  posthoc_results <- map(factors, function(factor) {
+    posthoc_formula <- as.formula(paste(var, "~", factor))
+    pairwisePermutationTest(posthoc_formula, data = data, method = "fdr")
+  })
+
+  names(posthoc_results) <- factors
+
+  # If there is an interaction effect, perform simple main effect analysis
+  if (length(factors) > 1) {
+    interaction_term <- paste(factors, collapse = ":")
+
+    if (interaction_term %in% anova_result$term) {
+      # if (anova_result$'Pr(Prob)'[anova_result$term == interaction_term] < 0.05) {
+      # Create interaction effect combinations
+      data$interaction <- interaction(data[[factors[1]]], data[[factors[2]]])
+
+      # Post hoc comparison for interaction effect
+      posthoc_interaction <- pairwisePermutationTest(as.formula(paste(var, "~ interaction")),
+                                                       data = data, method = "fdr")
+
+      posthoc_results$interaction <- posthoc_interaction
+
+      posthoc_results_df <- posthoc_results %>%
+                            bind_rows(.id = "source") %>%
+                            mutate(across(everything(), as.character)) %>%
+                            mutate(variable = var, .before = 1)
+      # }
+    }
+  }
+
+  list(anova = anova_result, posthoc = posthoc_results_df)
+}
+
+# Perform analysis for each subset
+anova_results.posthoc <- map(variables, ~ aovp_posthoc(data = data_02gen, var = .x, factors = c("gene", "treatment1st"))) %>% set_names(variables)
+
+# Extract the parameters from results
+extract_data <- function(anova_results.posthoc) {
+  result_list <- map(names(anova_results.posthoc), function(subset_name) {
+    subset <- anova_results.posthoc[[subset_name]]
+
+    # Post-hoc results
+    anova_df <- subset$anova %>%
+    mutate(result_type = "anova_df", .before = 1)
+
+    posthoc_df <- subset$posthoc %>%
+    mutate(result_type = "posthoc_df", .before = 1)
+
+      # Combine all results
+    all_results <- bind_rows(anova_df, posthoc_df)
+    all_results <- dplyr::bind_rows(anova_df, posthoc_df) %>%
+  dplyr::mutate(p.value = suppressWarnings(as.numeric(p.value)))
+    all_results
+
+  }
+  )
+
+  bind_rows(result_list)
+}
+
+# Use function to extract data
+anova_results.posthoc_df <- extract_data(anova_results.posthoc)
+
+# print(anova_results.posthoc_df)
+
+# Save results to CSV file
+# write_csv(anova_results.posthoc_df, "./results/offspring.performance.posthoc.csv")
+
+# Filter post hoc results for gene main effect
+gene_main_effect <- anova_results.posthoc_df %>%
+  filter(result_type == "posthoc_df", source == "gene") %>%
+  mutate(groups = str_extract_all(Comparison, "G\\d+")) %>%
+  unnest(groups) %>%
+  group_by(variable, Comparison) %>%
+  mutate(
+    group1 = first(groups),
+    group2 = last(groups)
+  ) %>%
+  ungroup() %>%
+  distinct(variable, group1, group2, p.value) %>%
+  mutate(p.value = as.numeric(p.value))
+
+# Function to generate letter groupings
+get_group_letters <- function(df) {
+  mat <- matrix(1, nrow = 6, ncol = 6)
+  rownames(mat) <- colnames(mat) <- sort(unique(c(df$group1, df$group2)))
+
+  for (i in seq_len(nrow(df))) {
+    g1 <- df$group1[i]
+    g2 <- df$group2[i]
+    pval <- as.numeric(df$p.value[i])
+    mat[g1, g2] <- pval
+    mat[g2, g1] <- pval
+  }
+
+  signif_mat <- mat < 0.1
+  diag(signif_mat) <- FALSE
+
+  letters <- multcompLetters(signif_mat)$Letters
+  return(tibble(group = names(letters), group_letter = letters))
+}
+
+# Apply grouping by variable
+group_results <- gene_main_effect %>%
+  group_by(variable) %>%
+  group_split() %>%
+  map_df(~ {
+    tibble(
+      variable = unique(.x$variable),
+      get_group_letters(.x)
+    )
+  })
+
+# Print results
+print(group_results)
+
+# Save results to CSV file
+write_csv(group_results, "./results/offspring.posthoc.gene.csv")
+
+
+# Comparison of Control vs Herbivory within each genotype G1–G6 under interaction extraction
+genewise_treatment_comp <- anova_results.posthoc_df %>%
+  filter(source == "interaction") %>%
+  filter(str_detect(Comparison, "^G[1-6]\\.Control - G[1-6]\\.Herbivory = 0$")) %>%
+  filter(str_extract(Comparison, "^G[1-6]") == str_extract(Comparison, "(?<=- )G[1-6]")) %>%
+  mutate(
+    gene = str_extract(Comparison, "^G[1-6]"),
+    comparison = "Control vs Herbivory"
+  ) %>%
+  select(variable, gene, comparison, Stat, p.value, p.adjust) %>%
+  mutate(sig = case_when(
+    p.value < 0.001 ~ "***",
+    p.value < 0.01  ~ "**",
+    p.value < 0.05  ~ "*",
+    TRUE             ~ ""
+  ))
+# Save results to CSV file
+write_csv(genewise_treatment_comp, "./results/offspring.posthoc.interaction.csv")
+
+# ==========================================================================
+# plotting
+# ==========================================================================
+# Define variables for plotting with their y-axis labels and limits
+plot_info <- tibble(
+                    variable = c("total.mass",
+                                 "total.leaf.mass",
+                                 "petiole.mass",
+                                 "stem.mass",
+                                 "root.mass",
+                                 "ratio",
+                                 "no.ramets",
+                                 "stem.length",
+                                 "total.leaf.area",
+                                 "no.leaves",
+                                 "mla",
+                                 "sla"),
+                    y_label = c("Total mass (g)",
+                                "Leaf mass (g)",
+                                "Petiole mass (g)",
+                                "Stem mass (g)",
+                                "Root mass (g)",
+                                "Root-to-shoot ratio",
+                                "Number of ramets",
+                                "Stem length (cm)",
+                                "Total leaf area (cm²)",
+                                "Number of leaves",
+                                "Mean leaf area (cm²)",
+                                "Specific leaf area (cm²/g)"),
+                     y_limit = c(0.05,
+                                0.02,
+                                0.006,
+                                0.05,
+                                0.02,
+                                1,
+                                10,
+                                20,
+                                10,
+                                5,
+                                4,
+                                8000)
+                                )
+
+sig_group <- tibble::tribble(
+  ~variable,     ~gene,   ~label,
+"mla" ,             "G1" , "b",
+"mla" ,             "G2" , "ab",
+"mla" ,             "G3" , "a",
+"mla" ,             "G4" , "c",
+"mla" ,             "G5" , "ab",
+"mla" ,             "G6" , "b",
+"no.leaves" ,       "G1" , "c",
+"no.leaves" ,       "G2" , "c",
+"no.leaves" ,       "G3" , "b",
+"no.leaves" ,       "G4" , "a",
+"no.leaves" ,       "G5" , "bc",
+"no.leaves" ,       "G6" , "c",
+# "no.ramets" ,       "G1" , "a",
+# "no.ramets" ,       "G2" , "ab",
+# "no.ramets" ,       "G3" , "ab",
+# "no.ramets" ,       "G4" , "b",
+# "no.ramets" ,       "G5" , "ab",
+# "no.ramets" ,       "G6" , "ab",
+# "petiole.mass" ,    "G1" , "a",
+# "petiole.mass" ,    "G2" , "ab",
+# "petiole.mass" ,    "G3" , "b",
+# "petiole.mass" ,    "G4" , "ab",
+# "petiole.mass" ,    "G5" , "ab",
+# "petiole.mass" ,    "G6" , "ab",
+# "ratio" ,           "G1" , "a",
+# "ratio" ,           "G2" , "ab",
+# "ratio" ,           "G3" , "ab",
+# "ratio" ,           "G4" , "b",
+# "ratio" ,           "G5" , "ab",
+# "ratio" ,           "G6" , "a",
+# "root.mass" ,       "G1" , "a",
+# "root.mass" ,       "G2" , "ab",
+# "root.mass" ,       "G3" , "ab",
+# "root.mass" ,       "G4" , "b",
+# "root.mass" ,       "G5" , "b",
+# "root.mass" ,       "G6" , "ab",
+"sla" ,             "G1" , "a",
+"sla" ,             "G2" , "a",
+"sla" ,             "G3" , "a",
+"sla" ,             "G4" , "b",
+"sla" ,             "G5" , "a",
+"sla" ,             "G6" , "a"
+# "stem.length" ,     "G1" , "a",
+# "stem.length" ,     "G2" , "a",
+# "stem.length" ,     "G3" , "a",
+# "stem.length" ,     "G4" , "a",
+# "stem.length" ,     "G5" , "a",
+# "stem.length" ,     "G6" , "a",
+# "stem.mass" ,       "G1" , "a",
+# "stem.mass" ,       "G2" , "a",
+# "stem.mass" ,       "G3" , "a",
+# "stem.mass" ,       "G4" , "a",
+# "stem.mass" ,       "G5" , "a",
+# "stem.mass" ,       "G6" , "a",
+# "total.leaf.area" , "G1" , "a",
+# "total.leaf.area" , "G2" , "ab",
+# "total.leaf.area" , "G3" , "b",
+# "total.leaf.area" , "G4" , "ab",
+# "total.leaf.area" , "G5" , "ab",
+# "total.leaf.area" , "G6" , "a",
+# "total.leaf.mass" , "G1" , "a",
+# "total.leaf.mass" , "G2" , "ab",
+# "total.leaf.mass" , "G3" , "b",
+# "total.leaf.mass" , "G4" , "b",
+# "total.leaf.mass" , "G5" , "ab",
+# "total.leaf.mass" , "G6" , "ab",
+# "total.mass" ,      "G1" , "a",
+# "total.mass" ,      "G2" , "a",
+# "total.mass" ,      "G3" , "a",
+# "total.mass" ,      "G4" , "a",
+# "total.mass" ,      "G5" , "a",
+# "total.mass" ,      "G6" , "a"
+)
+
+sig_inter <- tibble::tribble(
+  ~variable,     ~gene,   ~label,
+# "total.mass","G2","*",
+# "total.leaf.mass","G4","*",
+# "total.leaf.mass","G5","*",
+# "stem.mass","G2","**",
+# "no.ramets","G2","*",
+# "no.leaves","G4","**",
+# "no.leaves","G6","*",
+# "mla","G2","*",
+# "mla","G5","*"
+)
+
+# sapply(plot_info$variable, function(var) {
+#   range(data_02gen[[var]], na.rm = TRUE)
+# })
+
+# Convert data to long format and calculate means
+data_long <- data_02gen %>%
+  pivot_longer(
+    cols = all_of(plot_info$variable),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  filter(!is.na(value)) %>%
+  group_by(gene, treatment1st, variable) %>%
+  summarize(mean = mean(value),
+            se = sd(value) / sqrt(n()),
+            .groups = "drop")
+
+# Define color mapping
+color_values <- c("Herbivory" = "#C25759", "Control" = "#599CB4")
+
+# Define base theme to avoid code repetition
+base_theme <- theme_minimal(base_family = "serif") +
+  theme(
+    panel.grid = element_blank(),            # Remove grid lines
+    panel.background = element_blank(),      # Remove background color
+    axis.line = element_line(linewidth = 1, color = "black"), # Add axis line
+    axis.text.y = element_text(size = 14, color = "black"),
+    axis.title.y = element_text(size = 14, color = "black"),
+    axis.ticks.x = element_line(linewidth = 1, color = "black"),
+    axis.ticks.y = element_line(linewidth = 1, color = "black"),
+    axis.ticks.length = unit(0.2, "cm"),
+    legend.position = "none"               
+  )
+
+# Define universal plotting function
+create_grouped_barplot <- function(var, y_label, y_lim, data) {
+    subset_data <- data %>% filter(variable == var)
+  
+    sig_data1 <- sig_group %>%
+    filter(variable == var) %>%
+    left_join(subset_data %>% group_by(gene) %>% summarize(y = y_lim), by = "gene")
+    sig_data2 <- sig_inter %>%
+    filter(variable == var) %>%
+    left_join(subset_data %>% group_by(gene) %>% summarize(y = max(mean) * 1.2), by = "gene")
+
+    ggplot(subset_data, aes(x = gene, y = mean, fill = treatment1st)) +
+      geom_col(position = position_dodge(width = 0.8), width = 0.8, color = "black") +
+      geom_errorbar(aes(ymin = mean - se, ymax = mean + se),
+                        position = position_dodge(width = 0.8),
+                        width = 0.2) +
+      scale_fill_manual(values = color_values) +
+      labs(x = NULL, y = y_label) +
+      coord_cartesian(ylim = c(0, y_lim)) +
+      scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
+      geom_text(data = sig_data1, aes(x = gene, y = y , label = label), 
+              inherit.aes = FALSE, size = 5, family = "serif") +
+      geom_text(data = sig_data2, aes(x = gene, y = y , label = label), 
+              inherit.aes = FALSE, size = 5, family = "serif") +
+      base_theme +
+      theme(axis.text.x = element_text(size = 14, color = "black"),
+            axis.title.x = element_blank())
+  }
+
+bar_plots <- plot_info %>%
+    mutate(plot = pmap(list(variable, y_label, y_limit), ~ create_grouped_barplot(..1, ..2, ..3, data_long))) %>%
+    pull(plot)
+
+# Extract Legend
+legend_plot <- ggplot(data_long %>% filter(variable == "total.mass"),
+                      aes(x = gene, y = mean, fill = treatment1st)) +
+  geom_col(position = position_dodge(0.8), width = 0.8, color = "black") +
+  scale_fill_manual(values = color_values) +
+  theme_minimal(base_family = "serif") +
+  labs(fill = "Parental") +
+  theme(
+    legend.position = "right",
+    legend.text = element_text(size = 12, family = "serif"),
+    legend.key.size = unit(0.5, "cm")
+  )+
+  guides(fill = guide_legend(title.position = "top", title.hjust = 0.5)) 
+
+legend_grob <- cowplot::get_legend(legend_plot)
+
+# Split plots into figure_4 and figure_5
+figure_4_vars <- c("total.mass", "total.leaf.mass", "petiole.mass", "stem.mass", "root.mass", "ratio")
+figure_5_vars <- c("no.ramets", "stem.length", "total.leaf.area", "no.leaves", "mla", "sla")
+
+# Generate main figure
+main_plot_4 <- wrap_plots(bar_plots[plot_info$variable %in% figure_4_vars], ncol = 2) +
+    plot_annotation(tag_levels = 'A')
+main_plot_5 <- wrap_plots(bar_plots[plot_info$variable %in% figure_5_vars], ncol = 2)+
+    plot_annotation(tag_levels = 'A')
+
+# Combine pictures
+figure_4 <- ggdraw() +
+  draw_plot(main_plot_4, x = 0, y = 0, width = 1, height = 1) +
+  draw_grob(legend_grob, x = 0.80, y = 0.75, width = 0.22, height = 0.3)
+
+figure_5 <- ggdraw() +
+  draw_plot(main_plot_5, x = 0, y = 0, width = 1, height = 1) +
+  draw_grob(legend_grob, x = 0.80, y = 0.75, width = 0.22, height = 0.3)
+
+# Export figures
+ggexport(figure_4, filename = "./results/figure4.png",
+     width = 2200,
+     height = 3000,
+     pointsize = 12,
+     res = 300)
+
+ggexport(figure_5, filename = "./results/figure5.png",
+     width = 2200,
+     height = 3000,
+     pointsize = 12,
+     res = 300)
