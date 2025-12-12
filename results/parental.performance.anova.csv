@@ -1,0 +1,37 @@
+Traits,Effect,NumDF,DenDF,Sum Sq,Mean Sq,F value,P_Value,Stars
+Total mass,Genotype,5,69.06260937102721,0.766,0.153,9.956,0,***
+Total mass,Treatment (1st Gen),1,14.03078917398615,0.039,0.039,2.545,0.133,ns
+Total mass,Genotype x Treatment,5,69.06260936852226,0.111,0.022,1.44,0.221,ns
+Leaf mass,Genotype,5,69.03763699682237,0.034,0.007,7.154,0,***
+Leaf mass,Treatment (1st Gen),1,14.013362595521263,0.005,0.005,5.76,0.031,*
+Leaf mass,Genotype x Treatment,5,69.03763699480865,0.009,0.002,1.864,0.112,ns
+Stem mass,Genotype,5,69.0555228992338,0.163,0.033,9.284,0,***
+Stem mass,Treatment (1st Gen),1,14.028521745012762,0.002,0.002,0.71,0.414,ns
+Stem mass,Genotype x Treatment,5,69.05552289854968,0.018,0.004,1.006,0.421,ns
+Petiole mass,Genotype,5,69.44600725280924,0.083,0.017,3.007,0.016,*
+Petiole mass,Treatment (1st Gen),1,14.202097610713329,0.017,0.017,3.071,0.101,ns
+Petiole mass,Genotype x Treatment,5,69.44600726453699,0.028,0.006,1.015,0.415,ns
+Root mass,Genotype,5,69.06370871641641,0.003,0.001,4.305,0.002,**
+Root mass,Treatment (1st Gen),1,14.032733014838824,0,0,1.428,0.252,ns
+Root mass,Genotype x Treatment,5,69.06370871533747,0.001,0,1.285,0.28,ns
+Number of ramets,Genotype,5,69.12933158711357,337.396,67.479,7.143,0,***
+Number of ramets,Treatment (1st Gen),1,14.063455258314157,32.134,32.134,3.401,0.086,ns
+Number of ramets,Genotype x Treatment,5,69.12933158613457,104.249,20.85,2.207,0.063,ns
+Number of leaves,Genotype,5,69.11509490693037,316.092,63.218,14.576,0,***
+Number of leaves,Treatment (1st Gen),1,14.054507636330442,38.013,38.013,8.764,0.01,*
+Number of leaves,Genotype x Treatment,5,69.1150949070948,45.325,9.065,2.09,0.077,ns
+Stem length,Genotype,5,69.09281436158003,1501.615,300.323,2.756,0.025,*
+Stem length,Treatment (1st Gen),1,14.030901741163225,169.468,169.468,1.555,0.233,ns
+Stem length,Genotype x Treatment,5,69.09281436181791,838.055,167.611,1.538,0.19,ns
+Total leaf area,Genotype,5,69.16625553093523,5504.059,1100.812,4.433,0.001,**
+Total leaf area,Treatment (1st Gen),1,14.080370616621689,14.331,14.331,0.058,0.814,ns
+Total leaf area,Genotype x Treatment,5,69.16625553199225,1743.578,348.716,1.404,0.234,ns
+Mean leaf area,Genotype,5,69.43607817989772,243.261,48.652,18.314,0,***
+Mean leaf area,Treatment (1st Gen),1,14.146636170459239,10.942,10.942,4.119,0.062,ns
+Mean leaf area,Genotype x Treatment,5,69.43607812602984,15.226,3.045,1.146,0.344,ns
+Specific leaf area,Genotype,5,66.97244687627129,92785.947,18557.189,1.302,0.274,ns
+Specific leaf area,Treatment (1st Gen),1,11.942341571480458,495373.17,495373.17,34.757,0,***
+Specific leaf area,Genotype x Treatment,5,66.97244688147354,98357.951,19671.59,1.38,0.243,ns
+Root-to-shoot ratio,Genotype,5,69.28114983608035,0.017,0.003,4.159,0.002,**
+Root-to-shoot ratio,Treatment (1st Gen),1,14.110266331630353,0.002,0.002,2.919,0.109,ns
+Root-to-shoot ratio,Genotype x Treatment,5,69.2811498302457,0.004,0.001,0.897,0.488,ns

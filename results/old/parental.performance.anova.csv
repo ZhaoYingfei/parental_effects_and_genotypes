@@ -1,0 +1,37 @@
+Traits,effect,dfn,dfd,F,parametric.p.value,resampled.p.value
+Total mass,treatment1st,1,14,2.486,0.137,0.152
+Total mass,gene,5,70,9.895,0,0.001
+Total mass,gene:treatment1st,5,70,1.459,0.214,0.229
+Leaf mass,treatment1st,1,14,5.595,0.033,0.026
+Leaf mass,gene,5,70,6.427,0,0.001
+Leaf mass,gene:treatment1st,5,70,1.76,0.132,0.138
+Stem mass,treatment1st,1,14,0.697,0.418,0.435
+Stem mass,gene,5,70,9.39,0,0.001
+Stem mass,gene:treatment1st,5,70,1.016,0.415,0.463
+Petiole mass,treatment1st,1,14,3.085,0.101,0.05
+Petiole mass,gene,5,70,3.041,0.015,0.002
+Petiole mass,gene:treatment1st,5,70,1.029,0.407,0.433
+Root mass,treatment1st,1,14,1.409,0.255,0.247
+Root mass,gene,5,70,4.357,0.002,0.004
+Root mass,gene:treatment1st,5,70,1.309,0.27,0.269
+Number of ramets,treatment1st,1,14,3.413,0.086,0.077
+Number of ramets,gene,5,70,7.249,0,0.001
+Number of ramets,gene:treatment1st,5,70,2.26,0.058,0.067
+Number of leaves,treatment1st,1,14,8.634,0.011,0.006
+Number of leaves,gene,5,70,14.634,0,0.001
+Number of leaves,gene:treatment1st,5,70,2.1,0.075,0.07
+Stem length,treatment1st,1,14,1.614,0.225,0.22
+Stem length,gene,5,70,2.764,0.025,0.028
+Stem length,gene:treatment1st,5,70,1.51,0.198,0.203
+Total leaf area,treatment1st,1,14,0.053,0.821,0.808
+Total leaf area,gene,5,70,4.456,0.001,0.003
+Total leaf area,gene:treatment1st,5,70,1.417,0.229,0.228
+Mean leaf area,treatment1st,1,14,4.155,0.061,0.06
+Mean leaf area,gene,5,70,18.451,0,0.001
+Mean leaf area,gene:treatment1st,5,70,1.155,0.34,0.337
+Specific leaf area,treatment1st,1,14,32.408,0,0.001
+Specific leaf area,gene,5,70,1.16,0.337,0.351
+Specific leaf area,gene:treatment1st,5,70,1.23,0.304,0.31
+Root-to-shoot ratio,treatment1st,1,14,2.885,0.112,0.126
+Root-to-shoot ratio,gene,5,70,4.183,0.002,0.004
+Root-to-shoot ratio,gene:treatment1st,5,70,0.892,0.491,0.49

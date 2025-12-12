@@ -1,0 +1,9 @@
+var,effect,df,chi_square,p_value
+loss of fresh mass,G x H,5,0.10866369,0.7998029011
+loss of fresh mass,Herbivory (H),1,0.03245093,0.3997311364
+loss of fresh mass,Gene (G),5,0.81083232,0.0029898076
+loss of fresh mass,initial fresh weight,1,0.67120755,0.0002458384
+loss of leaf area,G x H,5,0.4143371,0.826934233
+loss of leaf area,Herbivory (H),1,0.1216420,0.421711247
+loss of leaf area,Gene (G),5,2.8485532,0.009509322
+loss of leaf area,initial fresh weight,1,0.7992205,0.041665415
